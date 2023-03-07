@@ -1,0 +1,44 @@
+name: Test DB Profile
+
+on:
+  workflow_call:
+    inputs:
+      db:
+        type: string
+
+env:
+  TEST_OUTPUT_DIR: ${{ github.workspace }}/manager/target/surefire-reports
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.3.0'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build
+        run: mvn clean package -Pnative -P${{ inputs.db }}
+
+      - name: Test
+        run: mvn test -Pintegration -P${{ inputs.db }}
+
+      - name: Test Logs
+        uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: ${{ inputs.db }}-test-results
+          path: ${{ env.TEST_OUTPUT_DIR }}
