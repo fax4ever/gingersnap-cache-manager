@@ -30,8 +30,8 @@ public final class JsonHelper {
    public static Json make(List<String> hits) {
       Json array = Json.array();
       for (String item : hits) {
-         // TODO this is very inefficient
-         array.add(Json.read(item));
+         // take as it is, we don't need to parse / validate
+         array.add(Json.factory().raw(item));
       }
       return array;
    }
